@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Y-Appstore",
+    "address": "https://potential-space-happiness-5vggx6pjr6rxh46g5.github.dev/repo/",
+    "mirrors": [],
+    "description": "YaoOS self-hosted application store (Y-Appstore).",
+    "certificate": "REPLACE_WITH_REPO_PUBLIC_KEY_HEX_AFTER_RUNNING_GEN_KEYS",
+    "enabled": true
+  }
+]
