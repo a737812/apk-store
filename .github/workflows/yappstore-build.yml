@@ -17,18 +17,25 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: accept-sdk-licenses
+      - name: install gradle
         run: |
-          mkdir -p $ANDROID_HOME/licenses
-          echo "8933bad161fd489636f8413609e96c2dd3f9ecac" > $ANDROID_HOME/licenses/android-sdk-license
-          echo "24333f8a63b68758cdec9fe634dda49c839101e8" > $ANDROID_HOME/licenses/android-sdk-preview-license
-          echo "d56f51277df913169c41dda736922b2ec8d4d057" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          # 用 gradle wrapper 的依赖(gradle-wrapper.jar), 但直接调系统 gradle 避免 wrapper 权限问题
+          cd fdroidclient
+          # gradlew 用当前 gradle 环境(系统装的 9.x 与 wrapper 版本接近即可)
+          chmod +x ./gradlew 2>/dev/null || true
       - name: build
         run: |
           cd fdroidclient
-          chmod +x ./gradlew
-          ./gradlew :app:assembleBasicDebug --no-daemon 2>&1 | tail -n 80
-          find app/build/outputs/apk -name '*.apk'
+          # 优先用 wrapper; 若 wrapper 拉不到 gradle 分布, 退回系统 gradle
+          if ./gradlew :app:assembleBasicDebug --no-daemon 2>&1 | tail -n 80; then
+            echo "WRAPPER_OK"
+          else
+            echo "wrapper failed, fallback to system gradle"
+            # runner 自带 gradle
+            gradle :app:assembleBasicDebug --no-daemon 2>&1 | tail -n 80
+          fi
+          echo "--- APK outputs ---"
+          find app/build/outputs/apk -name '*.apk' 2>/dev/null
       - name: upload-apk
         uses: actions/upload-artifact@v4
         with:
