@@ -40,26 +40,24 @@ def generate():
     os.makedirs(KEYS, exist_ok=True)
     os.makedirs(REPO, exist_ok=True)
 
-    now = datetime.datetime.now()
-    expire = "3650d"
-    batch = f"""
-%no-protection
-Key-Type: RSA
-Key-Length: 4096
-Subkey-Type: RSA
-Subkey-Length: 4096
-Name-Real: Y-Appstore
-Name-Email: repo@yappstore.local
-Expire-Date: {expire}
-Passphrase:
-%commit
-"""
-    with open(os.path.join(KEYS, "batch.txt"), "w") as f:
-        f.write(batch)
-
-    r = sh(["gpg", *gpg_home(KEYS), "--gen-key", os.path.join(KEYS, "batch.txt")], quiet=False)
+    # 直接用 gpg --full-generate-key 配合 batch 管道(避免写文件 + 版本兼容)
+    batch = (
+        "Key-Type: RSA\n"
+        "Key-Length: 4096\n"
+        "Subkey-Type: RSA\n"
+        "Subkey-Length: 4096\n"
+        "Name-Real: Y-Appstore\n"
+        "Name-Email: repo@yappstore.local\n"
+        "Expire-Date: 3650d\n"
+        "Passphrase:\n"
+        "%commit\n"
+    )
+    r = subprocess.run(
+        ["gpg", "--homedir", KEYS, "--batch", "--full-generate-key"],
+        input=batch, capture_output=True, text=True,
+    )
     if r.returncode != 0:
-        print("gpg --gen-key failed:", r.stderr)
+        print("gpg --full-generate-key failed:", r.stderr)
         return 1
 
     # 取指纹
