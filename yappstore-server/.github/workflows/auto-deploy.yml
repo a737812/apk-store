@@ -1,0 +1,23 @@
+name: yappstore-deploy
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'yappstore-server/**'
+jobs:
+  deploy-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd yappstore-server
+          python3 -m venv .venv
+          ./.venv/bin/pip install -q -r requirements.txt
+          echo '--- gen keys ---'
+          python3 gen_keys.py || echo 'gpg gen failed, skip'
+          echo '--- start server ---'
+          nohup ./.venv/bin/python server.py &
+          sleep 3
+          curl -s -o /dev/null -w 'repo=%{http_code} ' http://127.0.0.1:8080/repo/
+          curl -s -o /dev/null -w 'admin=%{http_code}\n' http://127.0.0.1:8080/admin
