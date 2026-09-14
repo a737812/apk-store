@@ -1,0 +1,37 @@
+name: yappstore-build
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "fdroidclient/**"
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: setup-java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: accept-sdk-licenses
+        run: |
+          mkdir -p $ANDROID_HOME/licenses
+          echo "8933bad161fd489636f8413609e96c2dd3f9ecac" > $ANDROID_HOME/licenses/android-sdk-license
+          echo "24333f8a63b68758cdec9fe634dda49c839101e8" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          echo "d56f51277df913169c41dda736922b2ec8d4d057" > $ANDROID_HOME/licenses/android-sdk-preview-license
+      - name: build
+        run: |
+          cd fdroidclient
+          chmod +x ./gradlew
+          ./gradlew :app:assembleBasicDebug --no-daemon 2>&1 | tail -n 80
+          find app/build/outputs/apk -name '*.apk'
+      - name: upload-apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: yappstore-apk
+          path: fdroidclient/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
